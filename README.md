@@ -16,7 +16,6 @@ This repository contains a static single-page web application that implements a 
 - Interactive form for patient parameters
 - twCAVI calculation from CAVI value and time (months from hemodialysis initiation to CAVI measurement)
 - Adjustable time horizon (months) with slider
-- Upload of external Cox model parameters via JSON (`Update Model (JSON)` button)
 - All computation is performed client-side in the browser
 
 ---
