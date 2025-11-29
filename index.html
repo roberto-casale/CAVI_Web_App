@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cox Risk Calculator</title>
+    
+    <!-- 1. React and Libraries via CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 2. Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 3. Custom Styles -->
+    <style>
+        body { background-color: #f8fafc; }
+        .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 300ms; }
+    </style>
+</head>
+<body>
+
+    <div id="root"></div>
+
+    <!-- 4. APP CODE -->
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- ICONS ---
+        const IconActivity = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-white"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        );
+
+        const IconCalculator = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-2 text-blue-600"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+        );
+        const IconRefresh = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-1"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+        );
+        const IconCalendar = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-slate-400"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+        );
+        const IconAlert = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-12 h-12 mx-auto mb-2 opacity-20"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+        );
+        const IconUpload = () => (
+             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+        );
+
+        // --- DEFAULT MODEL DATA (FULL DATASET) ---
+        const DEFAULT_MODEL_DATA = {
+            "features": [
+                "vascular_access_1", "ALP", "Ferritin", "sex_m", "P", 
+                "twCAVI", "creatinine", "PTH", "Fib"
+            ],
+            "coefficients": {
+                "vascular_access_1": 0.4286055558395752,
+                "ALP": 0.005932233742893975,
+                "Ferritin": 0.0018513877396531223,
+                "sex_m": 0.8781794192170704,
+                "P": -0.1852342899559569,
+                "twCAVI": 0.002185355449314991,
+                "creatinine": -0.17921102972351144,
+                "PTH": 0.00239005982816923,
+                "Fib": 0.0029893794961921194
+            },
+            "training_means": {
+                "vascular_access_1": 0.2872340425531915,
+                "ALP": 77.29904255319148,
+                "Ferritin": 275.4054255319149,
+                "sex_m": 0.5319148936170213,
+                "P": 5.276382978723404,
+                "twCAVI": 175.71010638297875,
+                "creatinine": 9.044148936170213,
+                "PTH": 313.70117021276604,
+                "Fib": 321.458085106383
+            },
+            "baseline_survival": [
+                { "time": 1.0, "survival_prob": 0.9928201934118859 },
+                { "time": 2.0, "survival_prob": 0.9853045634331663 },
+                { "time": 4.0, "survival_prob": 0.9776069913212889 },
+                { "time": 5.0, "survival_prob": 0.9698362069974963 },
+                { "time": 6.0, "survival_prob": 0.9467170233648472 },
+                { "time": 9.0, "survival_prob": 0.9386770218772401 },
+                { "time": 10.0, "survival_prob": 0.9300148518112552 },
+                { "time": 11.0, "survival_prob": 0.9211538704791661 },
+                { "time": 12.0, "survival_prob": 0.9034866130147993 },
+                { "time": 13.0, "survival_prob": 0.8944894859981234 },
+                { "time": 15.0, "survival_prob": 0.8854082377249726 },
+                { "time": 16.0, "survival_prob": 0.8665255947635763 },
+                { "time": 19.0, "survival_prob": 0.8462742730437096 },
+                { "time": 20.0, "survival_prob": 0.8150068252521675 },
+                { "time": 21.0, "survival_prob": 0.8043659431567641 },
+                { "time": 22.0, "survival_prob": 0.7937311263354628 },
+                { "time": 23.0, "survival_prob": 0.7831798597766295 },
+                { "time": 24.0, "survival_prob": 0.752022633440501 },
+                { "time": 27.0, "survival_prob": 0.7313018702936794 },
+                { "time": 28.0, "survival_prob": 0.7204613844249356 },
+                { "time": 31.0, "survival_prob": 0.6979935431704692 },
+                { "time": 32.0, "survival_prob": 0.6755662287907646 },
+                { "time": 34.0, "survival_prob": 0.6640372069100874 },
+                { "time": 35.0, "survival_prob": 0.6407348253501927 },
+                { "time": 36.0, "survival_prob": 0.6168408453294828 },
+                { "time": 37.0, "survival_prob": 0.6046986729114927 },
+                { "time": 38.0, "survival_prob": 0.5694417619847263 },
+                { "time": 39.0, "survival_prob": 0.5572737277849715 },
+                { "time": 40.0, "survival_prob": 0.5451184159836708 },
+                { "time": 41.0, "survival_prob": 0.5212017039383747 },
+                { "time": 46.0, "survival_prob": 0.5092671806457881 },
+                { "time": 47.0, "survival_prob": 0.4974667991266966 },
+                { "time": 48.0, "survival_prob": 0.4857137829548144 },
+                { "time": 52.0, "survival_prob": 0.4738116711247121 },
+                { "time": 54.0, "survival_prob": 0.4614551095276228 },
+                { "time": 56.0, "survival_prob": 0.4371945746333804 },
+                { "time": 57.0, "survival_prob": 0.423782260444621 },
+                { "time": 58.0, "survival_prob": 0.4104238248279404 },
+                { "time": 61.0, "survival_prob": 0.39724713545943807 },
+                { "time": 63.0, "survival_prob": 0.3837622248930413 },
+                { "time": 65.0, "survival_prob": 0.3702935482951149 },
+                { "time": 67.0, "survival_prob": 0.356687305834911 },
+                { "time": 70.0, "survival_prob": 0.34321485391965656 },
+                { "time": 73.0, "survival_prob": 0.31756753051164666 },
+                { "time": 76.0, "survival_prob": 0.3045838955438248 },
+                { "time": 81.0, "survival_prob": 0.2906025593793551 },
+                { "time": 92.0, "survival_prob": 0.2766443979313635 },
+                { "time": 100.0, "survival_prob": 0.26302437423511893 },
+                { "time": 101.0, "survival_prob": 0.26302437423511893 },
+                { "time": 103.0, "survival_prob": 0.23195396327126355 },
+                { "time": 104.0, "survival_prob": 0.23195396327126355 },
+                { "time": 105.0, "survival_prob": 0.23195396327126355 },
+                { "time": 106.0, "survival_prob": 0.23195396327126355 }
+            ]
+        };
+
+        const FIELD_CONFIG = {
+            "sex_m": { 
+                label: "Sex", 
+                type: "select", 
+                options: [{val: 1, text: "Male"}, {val: 0, text: "Female"}] 
+            },
+            "vascular_access_1": { 
+                label: "Vascular Access", 
+                type: "select", 
+                options: [{val: 1, text: "Central Venous Catheter [CVC]"}, {val: 0, text: "Arteriovenous Fistula [AVF]"}] 
+            },
+            "creatinine": { label: "Creatinine (mg/dL)", type: "number", step: 0.1 },
+            "ALP": { label: "Alkaline Phosphatase (U/L)", type: "number", step: 1 },
+            "Ferritin": { label: "Ferritin (ng/mL)", type: "number", step: 1 },
+            "P": { label: "Phosphorus (mg/dL)", type: "number", step: 0.1 },
+            "PTH": { label: "Parathyroid Hormone (pg/mL)", type: "number", step: 1 },
+            "Fib": { label: "Fibrinogen (mg/dL)", type: "number", step: 1 },
+        };
+        
+        // --- HELPER FUNCTIONS ---
+        // Helper to convert string inputs with commas or dots into valid floats
+        const parseInput = (val) => {
+            if (typeof val === 'number') return val;
+            if (!val) return 0;
+            // Replace comma with dot, then parse
+            const normalized = val.toString().replace(',', '.');
+            const parsed = parseFloat(normalized);
+            return isNaN(parsed) ? 0 : parsed;
+        };
+
+        // --- APP COMPONENT ---
+        function App() {
+            // State for the Model itself (Dynamic!)
+            const [modelData, setModelData] = useState(DEFAULT_MODEL_DATA);
+            
+            // Changed state init to strings/empty to allow typing
+            const [inputs, setInputs] = useState({});
+            const [targetTime, setTargetTime] = useState(30);
+            const [result, setResult] = useState(null);
+            
+            // twCAVI manual inputs (kept as raw inputs)
+            const [caviVal, setCaviVal] = useState("");
+            const [caviTiming, setCaviTiming] = useState("");
+            
+            const fileInputRef = useRef(null);
+
+            // Initialize on mount
+            useEffect(() => {
+                resetValues(DEFAULT_MODEL_DATA);
+            }, []);
+
+            // Helper to trigger file upload
+            const handleUploadClick = () => {
+                fileInputRef.current.click();
+            };
+
+            // Handle File Read
+            const handleFileChange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const json = JSON.parse(event.target.result);
+                        
+                        // Basic validation
+                        if(!json.features || !json.coefficients || !json.training_means || !json.baseline_survival) {
+                            alert("Invalid JSON format: missing required Cox model fields.");
+                            return;
+                        }
+
+                        setModelData(json);
+                        resetValues(json);
+                        alert("Model updated successfully!");
+                    } catch (err) {
+                        alert("Error parsing JSON file. Please check format.");
+                    }
+                };
+                reader.readAsText(file);
+            };
+
+            // Automatically update twCAVI when raw inputs change
+            useEffect(() => {
+                // Parse inputs safely before calculating
+                const val = parseInput(caviVal);
+                const timing = parseInput(caviTiming);
+                const calculatedTwCAVI = val * timing;
+                
+                setInputs(prev => ({
+                    ...prev,
+                    twCAVI: calculatedTwCAVI
+                }));
+            }, [caviVal, caviTiming]);
+
+            // Now accepts specific model data argument
+            const resetValues = (currentModel = modelData) => {
+                const initialValues = {};
+                currentModel.features.forEach(feat => {
+                    if (feat === 'sex_m') initialValues[feat] = 1; 
+                    else if (feat === 'vascular_access_1') initialValues[feat] = 0;
+                    else initialValues[feat] = parseFloat(currentModel.training_means[feat].toFixed(2));
+                });
+                
+                // Handle twCAVI Reset based on CURRENT model means
+                const meanTwCAVI = currentModel.training_means['twCAVI'];
+                const defaultCavi = 8.0; 
+                const defaultTiming = meanTwCAVI / defaultCavi; 
+
+                setCaviVal(defaultCavi.toFixed(1)); // Convert to string for input
+                setCaviTiming(defaultTiming.toFixed(2));
+                
+                initialValues['twCAVI'] = meanTwCAVI; 
+
+                setInputs(initialValues);
+                setResult(null);
+            };
+
+            const handleInputChange = (feature, value) => {
+                setInputs(prev => ({
+                    ...prev,
+                    [feature]: value // Store raw string to allow editing with comma
+                }));
+            };
+
+            const calculateRisk = () => {
+                const { features, coefficients, training_means, baseline_survival } = modelData;
+                
+                let logPartialHazard = 0;
+                features.forEach(feature => {
+                    // Parse the input (string or number) to float
+                    const userValue = parseInput(inputs[feature]);
+                    const meanVal = training_means[feature];
+                    const beta = coefficients[feature];
+                    logPartialHazard += (userValue - meanVal) * beta;
+                });
+
+                const partialHazard = Math.exp(logPartialHazard);
+
+                let baselineS0 = 1.0;
+                // Ensure sorting
+                const sortedBaseline = [...baseline_survival].sort((a, b) => a.time - b.time);
+                
+                // Logic: find the latest time point <= targetTime (Step function)
+                for (let point of sortedBaseline) {
+                    if (point.time <= targetTime) {
+                        baselineS0 = point.survival_prob;
+                    } else {
+                        // Since it is sorted, as soon as we exceed targetTime, 
+                        // the previous point was the correct step. We stop.
+                        break; 
+                    }
+                }
+
+                const survivalProb = Math.pow(baselineS0, partialHazard);
+                const riskProb = 1 - survivalProb;
+
+                setResult(riskProb);
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-800">
+                    <div className="max-w-4xl mx-auto space-y-6">
+                        
+                        {/* Header */}
+                        <header className="flex flex-col md:flex-row justify-between items-center pb-6 border-b border-slate-200 gap-4">
+                            <div className="flex items-center space-x-3 w-full md:w-auto">
+                                <div className="p-3 bg-blue-600 rounded-lg shadow-lg">
+                                    <IconActivity />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-slate-900">Haemodialysis Prognostic Estimator (twCAVI)</h1>
+                                    <p className="text-slate-500 text-sm">Risk assessment using Time-Weighted Cardio-Ankle Vascular Index</p>
+                                </div>
+                            </div>
+
+                            {/* Dynamic Upload Button */}
+                            <div className="flex gap-2 w-full md:w-auto">
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef}
+                                    onChange={handleFileChange}
+                                    className="hidden" 
+                                    accept=".json"
+                                />
+                                <button 
+                                    onClick={handleUploadClick}
+                                    className="flex items-center justify-center px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition-all w-full md:w-auto"
+                                >
+                                    <IconUpload /> Update Model (JSON)
+                                </button>
+                            </div>
+                        </header>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            
+                            {/* Input Column */}
+                            <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-lg font-semibold flex items-center">
+                                        <IconCalculator />
+                                        Patient Parameters
+                                    </h2>
+                                    <button 
+                                        onClick={() => resetValues(modelData)}
+                                        className="text-sm text-slate-400 hover:text-blue-600 flex items-center transition-colors"
+                                    >
+                                        <span className="flex items-center"><IconRefresh /> Reset to Means</span>
+                                    </button>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    
+                                    {/* Feature Loop - Uses dynamic modelData */}
+                                    {modelData.features.map(feature => {
+                                        if (feature === 'twCAVI') return null; 
+
+                                        const config = FIELD_CONFIG[feature] || { label: feature, type: "number", step: 0.1 };
+                                        
+                                        return (
+                                            <div key={feature} className="space-y-1">
+                                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                                                    {config.label}
+                                                </label>
+                                                
+                                                {config.type === 'select' ? (
+                                                    <select
+                                                        value={inputs[feature] || 0}
+                                                        onChange={(e) => handleInputChange(feature, e.target.value)}
+                                                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                                    >
+                                                        {config.options.map(opt => (
+                                                            <option key={opt.val} value={opt.val}>{opt.text}</option>
+                                                        ))}
+                                                    </select>
+                                                ) : (
+                                                    <input
+                                                        type="text"
+                                                        inputMode="decimal"
+                                                        value={inputs[feature] || ''}
+                                                        onChange={(e) => handleInputChange(feature, e.target.value)}
+                                                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                                    />
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+
+                                    {/* MANUAL BLOCK: twCAVI */}
+                                    <div className="col-span-1 md:col-span-2 p-4 bg-blue-50 rounded-lg border border-blue-100 mt-2">
+                                        <h3 className="text-sm font-bold text-blue-800 mb-3 uppercase tracking-wide">CAVI & Timing Calculation</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            
+                                            <div className="space-y-1">
+                                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                                                    CAVI Value
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    inputMode="decimal"
+                                                    value={caviVal}
+                                                    onChange={(e) => setCaviVal(e.target.value)}
+                                                    className="w-full p-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                                                    Time (*)
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    inputMode="decimal"
+                                                    value={caviTiming}
+                                                    onChange={(e) => setCaviTiming(e.target.value)}
+                                                    className="w-full p-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                                />
+                                                <p className="text-[10px] text-slate-400 leading-tight">
+                                                    (*) Time in months from haemodialysis initiation to the CAVI measurement.
+                                                </p>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <label className="block text-xs font-bold uppercase tracking-wider text-blue-400">
+                                                    Calculated twCAVI
+                                                </label>
+                                                <div className="w-full p-2 bg-blue-100 border border-blue-200 rounded-lg text-blue-800 font-mono text-center">
+                                                    {parseInput(inputs['twCAVI']).toFixed(1)}
+                                                </div>
+                                                <p className="text-[10px] text-blue-400 text-center leading-tight">CAVI × Time</p>
+                                            </div>
+
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <div className="mt-8 pt-6 border-t border-slate-100">
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                                        Time Horizon (Months)
+                                    </label>
+                                    <div className="flex items-center space-x-4">
+                                        <IconCalendar />
+                                        <input 
+                                            type="range" 
+                                            min="1" 
+                                            max="100" 
+                                            value={targetTime} 
+                                            onChange={(e) => setTargetTime(parseInt(e.target.value))}
+                                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                        />
+                                        <span className="text-xl font-bold text-slate-700 w-16 text-center">{targetTime}</span>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={calculateRisk}
+                                    className="mt-8 w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
+                                >
+                                    Calculate Risk
+                                </button>
+                            </div>
+
+                            {/* Results Column */}
+                            <div className="lg:col-span-1 space-y-6">
+                                <div className={`bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-500 ${result !== null ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4'}`}>
+                                    <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                                        Estimated Risk
+                                    </h3>
+                                    
+                                    {result !== null ? (
+                                        <div className="text-center py-6">
+                                            <div className="text-5xl font-extrabold text-slate-800 mb-2">
+                                                {(result * 100).toFixed(2)}%
+                                            </div>
+                                            <p className="text-slate-500 text-sm">
+                                                Probability of event at {targetTime} months
+                                            </p>
+                                            
+                                            <div className="mt-6 w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                                                <div 
+                                                    className={`h-full transition-all duration-1000 ease-out ${result < 0.3 ? 'bg-green-500' : result < 0.6 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                                                    style={{ width: `${result * 100}%` }}
+                                                />
+                                            </div>
+                                            <div className="flex justify-between text-xs text-slate-400 mt-1">
+                                                <span>0%</span>
+                                                <span>50%</span>
+                                                <span>100%</span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-10 text-slate-400">
+                                            <IconAlert />
+                                            <p>Input data to calculate</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="bg-slate-100 rounded-xl p-5 text-sm text-slate-600 border border-slate-200">
+                                    <h4 className="font-bold text-slate-700 mb-2">Methodology Note</h4>
+                                    <p className="mb-2">
+                                        This model utilizes Cox Proportional Hazards regression.
+                                    </p>
+                                    <p>
+                                        Pre-filled fields represent the <strong>mean values</strong> of the current loaded model. Leaving them unchanged neutralizes that variable's effect on the risk score.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* DISCLAIMER FOOTER (NEW) */}
+                        <footer className="mt-8 pt-6 border-t border-slate-200">
+                            <div className="bg-slate-100 border border-slate-200 rounded-lg p-4 text-xs text-slate-600 text-center">
+                                <p className="font-bold uppercase mb-1">Disclaimer: Experimental and Educational Use Only</p>
+                                <p>
+                                    This software is designed for research, experimental, and educational purposes. It has not been validated for clinical use and is not intended to be a substitute for professional medical advice, diagnosis, or treatment. 
+                                    The risk estimates provided are based on statistical models and should not be used for clinical decision-making. 
+                                    The authors and developers assume no liability for any direct or indirect consequences arising from the use of this application.
+                                </p>
+                                <p className="mt-2">
+                                   This static application does not set its own cookies or store personal data. GitHub Pages and external content providers (such as unpkg and cdn.tailwindcss.com) may use technical cookies under their own privacy policies.
+                                </p>
+                            </div>
+                        </footer>
+
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
