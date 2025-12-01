@@ -6,12 +6,12 @@
     <title>Cox Risk Calculator</title>
     
     <!-- 1. React and Libraries via CDN -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
+    <script src="./react.js"></script>
+    <script src="./react-dom.js"></script>
+    <script src="./babel.js"></script>
+      
     <!-- 2. Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="./tailwind.js"></script>
 
     <!-- 3. Custom Styles -->
     <style>
@@ -49,89 +49,95 @@
         );
 
         // --- DEFAULT MODEL DATA (FULL DATASET) ---
+        // NOTE: Data has been rounded for privacy compliance (k-anonymity) and file size optimization.
+        // - Time: Rounded to 2 decimal places.
+        // - Survival Probability: Rounded to 5 decimal places (preserves mathematical precision).
+        // - Coefficients & Means: Rounded to 4 decimal places.
         const DEFAULT_MODEL_DATA = {
             "features": [
                 "vascular_access_1", "ALP", "Ferritin", "sex_m", "P", 
                 "twCAVI", "creatinine", "PTH", "Fib"
             ],
             "coefficients": {
-                "vascular_access_1": 0.4286055558395752,
-                "ALP": 0.005932233742893975,
-                "Ferritin": 0.0018513877396531223,
-                "sex_m": 0.8781794192170704,
-                "P": -0.1852342899559569,
-                "twCAVI": 0.002185355449314991,
-                "creatinine": -0.17921102972351144,
-                "PTH": 0.00239005982816923,
-                "Fib": 0.0029893794961921194
+                "vascular_access_1": 0.4286,
+                "ALP": 0.0059,
+                "Ferritin": 0.0019,
+                "sex_m": 0.8782,
+                "P": -0.1852,
+                "twCAVI": 0.0022,
+                "creatinine": -0.1792,
+                "PTH": 0.0024,
+                "Fib": 0.0030
             },
             "training_means": {
-                "vascular_access_1": 0.2872340425531915,
-                "ALP": 77.29904255319148,
-                "Ferritin": 275.4054255319149,
-                "sex_m": 0.5319148936170213,
-                "P": 5.276382978723404,
-                "twCAVI": 175.71010638297875,
-                "creatinine": 9.044148936170213,
-                "PTH": 313.70117021276604,
-                "Fib": 321.458085106383
+                "vascular_access_1": 0.2872,
+                "ALP": 77.2990,
+                "Ferritin": 275.4054,
+                "sex_m": 0.5319,
+                "P": 5.2764,
+                "twCAVI": 175.7101,
+                "creatinine": 9.0441,
+                "PTH": 313.7012,
+                "Fib": 321.4581
             },
             "baseline_survival": [
-                { "time": 1.0, "survival_prob": 0.9928201934118859 },
-                { "time": 2.0, "survival_prob": 0.9853045634331663 },
-                { "time": 4.0, "survival_prob": 0.9776069913212889 },
-                { "time": 5.0, "survival_prob": 0.9698362069974963 },
-                { "time": 6.0, "survival_prob": 0.9467170233648472 },
-                { "time": 9.0, "survival_prob": 0.9386770218772401 },
-                { "time": 10.0, "survival_prob": 0.9300148518112552 },
-                { "time": 11.0, "survival_prob": 0.9211538704791661 },
-                { "time": 12.0, "survival_prob": 0.9034866130147993 },
-                { "time": 13.0, "survival_prob": 0.8944894859981234 },
-                { "time": 15.0, "survival_prob": 0.8854082377249726 },
-                { "time": 16.0, "survival_prob": 0.8665255947635763 },
-                { "time": 19.0, "survival_prob": 0.8462742730437096 },
-                { "time": 20.0, "survival_prob": 0.8150068252521675 },
-                { "time": 21.0, "survival_prob": 0.8043659431567641 },
-                { "time": 22.0, "survival_prob": 0.7937311263354628 },
-                { "time": 23.0, "survival_prob": 0.7831798597766295 },
-                { "time": 24.0, "survival_prob": 0.752022633440501 },
-                { "time": 27.0, "survival_prob": 0.7313018702936794 },
-                { "time": 28.0, "survival_prob": 0.7204613844249356 },
-                { "time": 31.0, "survival_prob": 0.6979935431704692 },
-                { "time": 32.0, "survival_prob": 0.6755662287907646 },
-                { "time": 34.0, "survival_prob": 0.6640372069100874 },
-                { "time": 35.0, "survival_prob": 0.6407348253501927 },
-                { "time": 36.0, "survival_prob": 0.6168408453294828 },
-                { "time": 37.0, "survival_prob": 0.6046986729114927 },
-                { "time": 38.0, "survival_prob": 0.5694417619847263 },
-                { "time": 39.0, "survival_prob": 0.5572737277849715 },
-                { "time": 40.0, "survival_prob": 0.5451184159836708 },
-                { "time": 41.0, "survival_prob": 0.5212017039383747 },
-                { "time": 46.0, "survival_prob": 0.5092671806457881 },
-                { "time": 47.0, "survival_prob": 0.4974667991266966 },
-                { "time": 48.0, "survival_prob": 0.4857137829548144 },
-                { "time": 52.0, "survival_prob": 0.4738116711247121 },
-                { "time": 54.0, "survival_prob": 0.4614551095276228 },
-                { "time": 56.0, "survival_prob": 0.4371945746333804 },
-                { "time": 57.0, "survival_prob": 0.423782260444621 },
-                { "time": 58.0, "survival_prob": 0.4104238248279404 },
-                { "time": 61.0, "survival_prob": 0.39724713545943807 },
-                { "time": 63.0, "survival_prob": 0.3837622248930413 },
-                { "time": 65.0, "survival_prob": 0.3702935482951149 },
-                { "time": 67.0, "survival_prob": 0.356687305834911 },
-                { "time": 70.0, "survival_prob": 0.34321485391965656 },
-                { "time": 73.0, "survival_prob": 0.31756753051164666 },
-                { "time": 76.0, "survival_prob": 0.3045838955438248 },
-                { "time": 81.0, "survival_prob": 0.2906025593793551 },
-                { "time": 92.0, "survival_prob": 0.2766443979313635 },
-                { "time": 100.0, "survival_prob": 0.26302437423511893 },
-                { "time": 101.0, "survival_prob": 0.26302437423511893 },
-                { "time": 103.0, "survival_prob": 0.23195396327126355 },
-                { "time": 104.0, "survival_prob": 0.23195396327126355 },
-                { "time": 105.0, "survival_prob": 0.23195396327126355 },
-                { "time": 106.0, "survival_prob": 0.23195396327126355 }
+                { "time": 1.00, "survival_prob": 0.99282 },
+                { "time": 2.00, "survival_prob": 0.98530 },
+                { "time": 4.00, "survival_prob": 0.97761 },
+                { "time": 5.00, "survival_prob": 0.96984 },
+                { "time": 6.00, "survival_prob": 0.94672 },
+                { "time": 9.00, "survival_prob": 0.93868 },
+                { "time": 10.00, "survival_prob": 0.93001 },
+                { "time": 11.00, "survival_prob": 0.92115 },
+                { "time": 12.00, "survival_prob": 0.90349 },
+                { "time": 13.00, "survival_prob": 0.89449 },
+                { "time": 15.00, "survival_prob": 0.88541 },
+                { "time": 16.00, "survival_prob": 0.86653 },
+                { "time": 19.00, "survival_prob": 0.84627 },
+                { "time": 20.00, "survival_prob": 0.81501 },
+                { "time": 21.00, "survival_prob": 0.80437 },
+                { "time": 22.00, "survival_prob": 0.79373 },
+                { "time": 23.00, "survival_prob": 0.78318 },
+                { "time": 24.00, "survival_prob": 0.75202 },
+                { "time": 27.00, "survival_prob": 0.73130 },
+                { "time": 28.00, "survival_prob": 0.72046 },
+                { "time": 31.00, "survival_prob": 0.69799 },
+                { "time": 32.00, "survival_prob": 0.67557 },
+                { "time": 34.00, "survival_prob": 0.66404 },
+                { "time": 35.00, "survival_prob": 0.64073 },
+                { "time": 36.00, "survival_prob": 0.61684 },
+                { "time": 37.00, "survival_prob": 0.60470 },
+                { "time": 38.00, "survival_prob": 0.56944 },
+                { "time": 39.00, "survival_prob": 0.55727 },
+                { "time": 40.00, "survival_prob": 0.54512 },
+                { "time": 41.00, "survival_prob": 0.52120 },
+                { "time": 46.00, "survival_prob": 0.50927 },
+                { "time": 47.00, "survival_prob": 0.49747 },
+                { "time": 48.00, "survival_prob": 0.48571 },
+                { "time": 52.00, "survival_prob": 0.47381 },
+                { "time": 54.00, "survival_prob": 0.46146 },
+                { "time": 56.00, "survival_prob": 0.43719 },
+                { "time": 57.00, "survival_prob": 0.42378 },
+                { "time": 58.00, "survival_prob": 0.41042 },
+                { "time": 61.00, "survival_prob": 0.39725 },
+                { "time": 63.00, "survival_prob": 0.38376 },
+                { "time": 65.00, "survival_prob": 0.37029 },
+                { "time": 67.00, "survival_prob": 0.35669 },
+                { "time": 70.00, "survival_prob": 0.34321 },
+                { "time": 73.00, "survival_prob": 0.31757 },
+                { "time": 76.00, "survival_prob": 0.30458 },
+                { "time": 81.00, "survival_prob": 0.29060 },
+                { "time": 92.00, "survival_prob": 0.27664 },
+                { "time": 100.00, "survival_prob": 0.26302 },
+                { "time": 101.00, "survival_prob": 0.26302 },
+                { "time": 103.00, "survival_prob": 0.23195 },
+                { "time": 104.00, "survival_prob": 0.23195 },
+                { "time": 105.00, "survival_prob": 0.23195 },
+                { "time": 106.00, "survival_prob": 0.23195 }
             ]
         };
+
+
 
         const FIELD_CONFIG = {
             "sex_m": { 
@@ -166,6 +172,7 @@
         // --- APP COMPONENT ---
         function App() {
             // State for the Model itself (Dynamic!)
+            const [acceptedDisclaimer, setAcceptedDisclaimer] = useState(false);
             const [modelData, setModelData] = useState(DEFAULT_MODEL_DATA);
             
             // Changed state init to strings/empty to allow typing
@@ -293,6 +300,31 @@
                 setResult(riskProb);
             };
 
+
+            if (!acceptedDisclaimer) {
+                return (
+                    <div className="fixed inset-0 bg-slate-900 bg-opacity-70 flex items-center justify-center p-4 z-50">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 text-center">
+                            <IconAlert />
+                            <h2 className="text-2xl font-bold text-slate-800 mb-4">Research Use Only</h2>
+                            <div className="text-left text-slate-600 space-y-4 text-sm mb-8 overflow-y-auto max-h-60 border p-4 rounded bg-slate-50">
+                                <p><strong>Important Legal Notice:</strong></p>
+                                <p>This software ("twCAVI Prognostic Estimator") is a prototype designed exclusively for <strong>scientific research and educational demonstration</strong>.</p>
+                                <p>It is NOT a CE-marked Medical Device. It has NOT been validated for clinical decision-making on human patients.</p>
+                                <p><strong>No Data Collection:</strong> This application runs entirely in your browser. No patient data is transmitted to any server.</p>
+                                <p>By proceeding, you acknowledge that you are a healthcare professional or researcher and agree to use this tool solely for experimental purposes.</p>
+                            </div>
+                            <button 
+                                onClick={() => setAcceptedDisclaimer(true)}
+                                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors"
+                            >
+                                I Understand & Agree
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
             return (
                 <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-800">
                     <div className="max-w-4xl mx-auto space-y-6">
@@ -305,7 +337,8 @@
                                 </div>
                                 <div>
                                     <h1 className="text-2xl font-bold text-slate-900">Haemodialysis Prognostic Estimator (twCAVI)</h1>
-                                    <p className="text-slate-500 text-sm">Risk assessment using Time-Weighted Cardio-Ankle Vascular Index</p>
+                                    <p className="text-slate-500 text-sm">Risk assessment of mortality using Time-Weighted Cardio-Ankle Vascular Index
+</p>
                                 </div>
                             </div>
                         </header>
@@ -490,17 +523,28 @@
                         {/* DISCLAIMER FOOTER (NEW) */}
                         <footer className="mt-8 pt-6 border-t border-slate-200">
                             <div className="bg-slate-100 border border-slate-200 rounded-lg p-4 text-xs text-slate-600 text-center">
+                                
+                                {/* SEZIONE 1: Disclaimer Medico */}
                                 <p className="font-bold uppercase mb-1">Disclaimer: Experimental and Educational Use Only</p>
-                                <p>
+                                <p className="mb-4">
                                     This software is designed for research, experimental, and educational purposes. It has not been validated for clinical use and is not intended to be a substitute for professional medical advice, diagnosis, or treatment. 
                                     The risk estimates provided are based on statistical models and should not be used for clinical decision-making. 
                                     The authors and developers assume no liability for any direct or indirect consequences arising from the use of this application.
                                 </p>
-                                <p className="mt-2">
-                                   This static application does not set its own cookies or store personal data. GitHub Pages and external content providers (such as unpkg and cdn.tailwindcss.com) may use technical cookies under their own privacy policies.
+
+                                <div className="w-full h-px bg-slate-200 my-3"></div>
+
+                                {/* SEZIONE 2: Privacy & GDPR (Il tuo nuovo testo) */}
+                                <p className="text-[10px] text-slate-500 leading-tight">
+                                    <strong>Privacy & GDPR Notice:</strong> This is a "Client-Side Only" application. 
+                                    Data entered remains exclusively on your device and is never transmitted to the author, GitHub, or any third party. 
+                                    The application does not use profiling cookies. 
+                                    Hosting is provided by GitHub Pages (USA), which may collect technical connection logs (IP address) for security and maintenance purposes.
                                 </p>
                             </div>
                         </footer>
+
+
 
                     </div>
                 </div>
