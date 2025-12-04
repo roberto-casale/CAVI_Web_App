@@ -317,10 +317,10 @@
                             <h2 className="text-2xl font-bold text-slate-800 mb-4">Research Use Only</h2>
                             <div className="text-left text-slate-600 space-y-4 text-sm mb-8 overflow-y-auto max-h-60 border p-4 rounded bg-slate-50">
                                 <p><strong>Important Legal Notice:</strong></p>
-                                <p>This software ("twCAVI Prognostic Estimator") is a prototype designed exclusively for <strong>scientific research and educational demonstration</strong>.</p>
-                                <p>It is NOT a CE-marked Medical Device. It has NOT been validated for clinical decision-making on human patients.</p>
-                                <p><strong>No Data Collection:</strong> This application runs entirely in your browser. No patient data is transmitted to any server.</p>
-                                <p>By proceeding, you acknowledge that you are a healthcare professional or researcher and agree to use this tool solely for experimental purposes.</p>
+                                <p>This software is a prototype designed exclusively for <strong>scientific research and educational demonstration</strong>.</p>
+                                <p>It is NOT a CE-marked Medical Device. It implies <strong>NO doctor-patient relationship</strong>.</p>
+                                <p><strong>Data Privacy:</strong> This application runs entirely in your browser. Clinical values entered are NOT sent to any server. Hosting infrastructure (Vercel) processes connection data for security only.</p>
+                                <p>By proceeding, you acknowledge that you are a healthcare professional or researcher and agree to use this tool solely for experimental purposes at your own risk.</p>
                             </div>
                             <button 
                                 onClick={() => setAcceptedDisclaimer(true)}
@@ -561,23 +561,23 @@
                         {/* DISCLAIMER FOOTER (NEW) */}
                         <footer className="mt-8 pt-6 border-t border-slate-200">
                             <div className="bg-slate-100 border border-slate-200 rounded-lg p-4 text-xs text-slate-600 text-center">
-                                
-                                {/* SEZIONE 1: Disclaimer Medico */}
+                                {/* Medical Disclaimer */}
                                 <p className="font-bold uppercase mb-1">Disclaimer: Experimental and Educational Use Only</p>
                                 <p className="mb-4">
                                     This software is designed for research, experimental, and educational purposes. It has not been validated for clinical use and is not intended to be a substitute for professional medical advice, diagnosis, or treatment. 
                                     The risk estimates provided are based on statistical models and should not be used for clinical decision-making. 
                                     The authors and developers assume no liability for any direct or indirect consequences arising from the use of this application.
                                 </p>
-
                                 <div className="w-full h-px bg-slate-200 my-3"></div>
-
-                                {/* SEZIONE 2: Privacy & GDPR (Il tuo nuovo testo) */}
+                                {/* Privacy & GDPR*/}
                                 <p className="text-[10px] text-slate-500 leading-tight">
-                                    <strong>Privacy & GDPR Notice:</strong> This is a "Client-Side Only" application. 
-                                    Data entered remains exclusively on your device and is never transmitted to the author, GitHub, or any third party. 
-                                    The application does not use profiling cookies. 
-                                    Hosting is provided by GitHub Pages (USA), which may collect technical connection logs (IP address) for security and maintenance purposes.
+                                    <strong>Privacy & GDPR Notice:</strong> This application functions as a "Client-Side SPA". 
+                                    Patient clinical data entered in the form remains exclusively in your browser's memory (RAM) and is <strong>never transmitted</strong> to the developers, databases, or third parties. 
+                                    <br/><br/>
+                                    <strong>Infrastructure & Hosting:</strong> This site is hosted by <strong>Vercel Inc. (USA)</strong>. 
+                                    While Vercel does not access the input data, they may collect technical access logs (IP address, User Agent) for security, fraud prevention, and performance monitoring purposes. 
+                                    By using this tool, you acknowledge this technical data processing.
+                                    The application does not use profiling cookies.                                    
                                 </p>
                             </div>
                         </footer>
