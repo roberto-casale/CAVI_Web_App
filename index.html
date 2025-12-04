@@ -137,8 +137,6 @@
             ]
         };
 
-
-
         const FIELD_CONFIG = {
             "sex_m": { 
                 label: "Sex", 
@@ -150,12 +148,19 @@
                 type: "select", 
                 options: [{val: 1, text: "Central Venous Catheter [CVC]"}, {val: 0, text: "Arteriovenous Fistula [AVF]"}] 
             },
-            "creatinine": { label: "Creatinine (mg/dL)", type: "number", step: 0.1 },
-            "ALP": { label: "Alkaline Phosphatase (U/L)", type: "number", step: 1 },
-            "Ferritin": { label: "Ferritin (ng/mL)", type: "number", step: 1 },
-            "P": { label: "Phosphorus (mg/dL)", type: "number", step: 0.1 },
-            "PTH": { label: "Parathyroid Hormone (pg/mL)", type: "number", step: 1 },
-            "Fib": { label: "Fibrinogen (mg/dL)", type: "number", step: 1 },
+            // Added min/max limits for validation
+            "creatinine": { label: "Creatinine (mg/dL)", type: "number", step: 0.1, min: 0.1, max: 30.0 },
+            "ALP": { label: "Alkaline Phosphatase (U/L)", type: "number", step: 1, min: 10, max: 2000 },
+            "Ferritin": { label: "Ferritin (ng/mL)", type: "number", step: 1, min: 1, max: 10000 },
+            "P": { label: "Phosphorus (mg/dL)", type: "number", step: 0.1, min: 1.0, max: 20.0 },
+            "PTH": { label: "Parathyroid Hormone (pg/mL)", type: "number", step: 1, min: 1, max: 5000 },
+            "Fib": { label: "Fibrinogen (mg/dL)", type: "number", step: 1, min: 50, max: 1500 },
+        };
+
+        // Configuration for manual inputs (CAVI and Time)
+        const MANUAL_INPUT_CONFIG = {
+            cavi: { min: 1.0, max: 20.0, step: 0.1, label: "CAVI Value" },
+            time: { min: 0.0, max: 600.0, step: 0.1, label: "Time (Months)" }
         };
         
         // --- HELPER FUNCTIONS ---
@@ -183,44 +188,11 @@
             // twCAVI manual inputs (kept as raw inputs)
             const [caviVal, setCaviVal] = useState("");
             const [caviTiming, setCaviTiming] = useState("");
-            
-            const fileInputRef = useRef(null);
 
             // Initialize on mount
             useEffect(() => {
                 resetValues(DEFAULT_MODEL_DATA);
             }, []);
-
-            // Helper to trigger file upload
-            const handleUploadClick = () => {
-                fileInputRef.current.click();
-            };
-
-            // Handle File Read
-            const handleFileChange = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    try {
-                        const json = JSON.parse(event.target.result);
-                        
-                        // Basic validation
-                        if(!json.features || !json.coefficients || !json.training_means || !json.baseline_survival) {
-                            alert("Invalid JSON format: missing required Cox model fields.");
-                            return;
-                        }
-
-                        setModelData(json);
-                        resetValues(json);
-                        alert("Model updated successfully!");
-                    } catch (err) {
-                        alert("Error parsing JSON file. Please check format.");
-                    }
-                };
-                reader.readAsText(file);
-            };
 
             // Automatically update twCAVI when raw inputs change
             useEffect(() => {
@@ -265,10 +237,47 @@
                 }));
             };
 
+
             const calculateRisk = () => {
                 const { features, coefficients, training_means, baseline_survival } = modelData;
                 
                 let logPartialHazard = 0;
+
+                // Check Manual Inputs (CAVI & Time) first
+                const currentCavi = parseInput(caviVal);
+                const currentTime = parseInput(caviTiming);
+
+                // Check CAVI limits
+                if (currentCavi < MANUAL_INPUT_CONFIG.cavi.min || currentCavi > MANUAL_INPUT_CONFIG.cavi.max) {
+                    alert(`Value for ${MANUAL_INPUT_CONFIG.cavi.label} is out of range. \nPlease enter a value between ${MANUAL_INPUT_CONFIG.cavi.min} and ${MANUAL_INPUT_CONFIG.cavi.max}.`);
+                    return;
+                }
+                // Check Time limits
+                if (currentTime < MANUAL_INPUT_CONFIG.time.min || currentTime > MANUAL_INPUT_CONFIG.time.max) {
+                    alert(`Value for ${MANUAL_INPUT_CONFIG.time.label} is out of range. \nPlease enter a value between ${MANUAL_INPUT_CONFIG.time.min} and ${MANUAL_INPUT_CONFIG.time.max}.`);
+                    return;
+                }
+
+                // Before calculating, check if values are within reasonable limits
+                for (let feature of features) {
+                    // Skip features that are not in FIELD_CONFIG (like twCAVI handled separately)
+                    if (FIELD_CONFIG[feature] && FIELD_CONFIG[feature].type === 'number') {
+                        const val = parseInput(inputs[feature]);
+                        const conf = FIELD_CONFIG[feature];
+                        
+                        // Check Min
+                        if (conf.min !== undefined && val < conf.min) {
+                            alert(`Value for ${conf.label} is too low. Minimum allowed is ${conf.min}.`);
+                            return; // Stop calculation
+                        }
+                        // Check Max
+                        if (conf.max !== undefined && val > conf.max) {
+                            alert(`Value for ${conf.label} is too high. Maximum allowed is ${conf.max}.`);
+                            return; // Stop calculation
+                        }
+                    }
+                }
+
                 features.forEach(feature => {
                     // Parse the input (string or number) to float
                     const userValue = parseInput(inputs[feature]);
@@ -299,7 +308,6 @@
 
                 setResult(riskProb);
             };
-
 
             if (!acceptedDisclaimer) {
                 return (
@@ -367,11 +375,20 @@
                                         if (feature === 'twCAVI') return null; 
 
                                         const config = FIELD_CONFIG[feature] || { label: feature, type: "number", step: 0.1 };
-                                        
+
+
+
+
                                         return (
                                             <div key={feature} className="space-y-1">
                                                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
-                                                    {config.label}
+                                                    {config.label} 
+                                                    {/* Display range hint if exists */}
+                                                    {config.type === 'number' && (
+                                                        <span className="ml-1 text-[10px] font-normal lowercase text-slate-400">
+                                                            ({config.min} - {config.max})
+                                                        </span>
+                                                    )}
                                                 </label>
                                                 
                                                 {config.type === 'select' ? (
@@ -386,8 +403,12 @@
                                                     </select>
                                                 ) : (
                                                     <input
-                                                        type="text"
+                                                        type="number" // Changed from 'text' to 'number' for browser UI controls
                                                         inputMode="decimal"
+                                                        // Pass constraints to HTML input for browser validation UI
+                                                        min={config.min}
+                                                        max={config.max}
+                                                        step={config.step}
                                                         value={inputs[feature] || ''}
                                                         onChange={(e) => handleInputChange(feature, e.target.value)}
                                                         className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
@@ -397,31 +418,48 @@
                                         );
                                     })}
 
+
+
+
                                     {/* MANUAL BLOCK: twCAVI */}
                                     <div className="col-span-1 md:col-span-2 p-4 bg-blue-50 rounded-lg border border-blue-100 mt-2">
                                         <h3 className="text-sm font-bold text-blue-800 mb-3 uppercase tracking-wide">CAVI & Timing Calculation</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                             
+                                            {/* CAVI Input */}
                                             <div className="space-y-1">
                                                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
                                                     CAVI Value
+                                                    <span className="ml-1 text-[10px] font-normal lowercase text-slate-400">
+                                                        ({MANUAL_INPUT_CONFIG.cavi.min} - {MANUAL_INPUT_CONFIG.cavi.max})
+                                                    </span>
                                                 </label>
                                                 <input
-                                                    type="text"
+                                                    type="number" // Use number type for browser UI controls
                                                     inputMode="decimal"
+                                                    min={MANUAL_INPUT_CONFIG.cavi.min}
+                                                    max={MANUAL_INPUT_CONFIG.cavi.max}
+                                                    step={MANUAL_INPUT_CONFIG.cavi.step}
                                                     value={caviVal}
                                                     onChange={(e) => setCaviVal(e.target.value)}
                                                     className="w-full p-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                                 />
                                             </div>
 
+                                            {/* Time Input */}
                                             <div className="space-y-1">
                                                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
                                                     Time (*)
+                                                    <span className="ml-1 text-[10px] font-normal lowercase text-slate-400">
+                                                        ({MANUAL_INPUT_CONFIG.time.min} - {MANUAL_INPUT_CONFIG.time.max})
+                                                    </span>
                                                 </label>
                                                 <input
-                                                    type="text"
+                                                    type="number" // Use number type
                                                     inputMode="decimal"
+                                                    min={MANUAL_INPUT_CONFIG.time.min}
+                                                    max={MANUAL_INPUT_CONFIG.time.max}
+                                                    step={MANUAL_INPUT_CONFIG.time.step}
                                                     value={caviTiming}
                                                     onChange={(e) => setCaviTiming(e.target.value)}
                                                     className="w-full p-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
@@ -431,6 +469,7 @@
                                                 </p>
                                             </div>
 
+                                            {/* Calculated Result Display (No changes here needed) */}
                                             <div className="space-y-1">
                                                 <label className="block text-xs font-bold uppercase tracking-wider text-blue-400">
                                                     Calculated twCAVI
@@ -443,7 +482,6 @@
 
                                         </div>
                                     </div>
-
                                 </div>
 
                                 <div className="mt-8 pt-6 border-t border-slate-100">
@@ -543,9 +581,6 @@
                                 </p>
                             </div>
                         </footer>
-
-
-
                     </div>
                 </div>
             );
